@@ -5,6 +5,7 @@ import torch
 import transformers
 from transformers import T5ForConditionalGeneration, T5Config
 from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
+from transformers import T5Tokenizer, T5Model
 import wandb
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -20,6 +21,9 @@ def initialize_model(args):
     or training a T5 model initialized with the 'google-t5/t5-small' config
     from scratch.
     '''
+    model = T5Model.from_pretrained("t5-small")
+    import pdb; pdb.set_trace()
+    return model
     pass
 
 def mkdir(dirpath):

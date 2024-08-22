@@ -27,15 +27,37 @@ class T5Dataset(Dataset):
             * Class behavior should be different on the test set.
         '''
         # TODO
+        self.data_folder = data_folder
+        self.split = split
+        self.tokenizer = T5TokenizerFast.from_pretrained('t5-small')
+        self.data = self.process_data(data_folder, split, self.tokenizer)
+        print(f"Loaded {len(self.data)} samples for {split}.")
 
     def process_data(self, data_folder, split, tokenizer):
         # TODO
+        input_file = os.path.join(data_folder, f"{split}.nl")
+        target_file = os.path.join(data_folder, f"{split}.sql")
+        
+        data = []
+        if os.path.exists(input_file) and os.path.exists(target_file):
+            with open(input_file, 'r') as infile, open(target_file, 'r') as targetfile:
+                for line, target in zip(infile, targetfile):
+                    # Tokenize input and target
+                    input_tokens = tokenizer.encode(line.strip(), add_special_tokens=True)
+                    target_tokens = tokenizer.encode(target.strip(), add_special_tokens=True)
+                    data.append((input_tokens, target_tokens))
+        else:
+            print(f"Files {input_file} or {target_file} not found.")
+        
+        return data
     
     def __len__(self):
         # TODO
+        return len(self.data)
 
     def __getitem__(self, idx):
         # TODO
+        return self.data[idx]
 
 def normal_collate_fn(batch):
     '''

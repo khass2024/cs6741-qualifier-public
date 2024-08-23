@@ -39,7 +39,7 @@ def get_args():
     parser.add_argument('--patience_epochs', type=int, default=0,
                         help="If validation performance stops improving, how many epochs should we wait before stopping?")
 
-    parser.add_argument('--use_wandb', action='store_true',
+    parser.add_argument('--use_wandb', action='store_true', default=True,
                         help="If set, we will use wandb to keep track of experiments")
     parser.add_argument('--experiment_name', type=str, default='experiment',
                         help="How should we name this experiment?")

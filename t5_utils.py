@@ -1,5 +1,4 @@
 import os
-
 import torch
 
 import transformers
@@ -12,7 +11,21 @@ DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 def setup_wandb(args):
     # Implement this if you wish to use wandb in your experiments
-    pass
+    wandb.init(
+        project="CS6741-T5-Training",  
+        name=args.experiment_name,     
+        config={                      
+            "optimizer": args.optimizer_type,
+            "learning_rate": args.learning_rate,
+            "weight_decay": args.weight_decay,
+            "scheduler_type": args.scheduler_type,
+            "num_warmup_epochs": args.num_warmup_epochs,
+            "max_n_epochs": args.max_n_epochs,
+            "batch_size": args.batch_size,
+            "test_batch_size": args.test_batch_size,
+        }
+    )
+
 
 def initialize_model(args):
     '''

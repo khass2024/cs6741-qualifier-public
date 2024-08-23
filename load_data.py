@@ -36,18 +36,28 @@ class T5Dataset(Dataset):
     def process_data(self, data_folder, split, tokenizer):
         # TODO
         input_file = os.path.join(data_folder, f"{split}.nl")
-        target_file = os.path.join(data_folder, f"{split}.sql")
+        target_file = os.path.join(data_folder, f"{split}.sql") if split != "test" else None
         
         data = []
-        if os.path.exists(input_file) and os.path.exists(target_file):
-            with open(input_file, 'r') as infile, open(target_file, 'r') as targetfile:
-                for line, target in zip(infile, targetfile):
-                    # Tokenize input and target
-                    input_tokens = tokenizer.encode(line.strip(), add_special_tokens=True)
-                    target_tokens = tokenizer.encode(target.strip(), add_special_tokens=True)
-                    data.append((input_tokens, target_tokens))
+        if os.path.exists(input_file):
+            with open(input_file, 'r') as infile:
+                if split == "test":
+                    # For the test set, only process input
+                    for line in infile:
+                        input_tokens = tokenizer.encode(line.strip(), add_special_tokens=True)
+                        data.append((input_tokens, None))
+                else:
+                    # For train/dev, process both input and target
+                    if os.path.exists(target_file):
+                        with open(target_file, 'r') as targetfile:
+                            for line, target in zip(infile, targetfile):
+                                input_tokens = tokenizer.encode(line.strip(), add_special_tokens=True)
+                                target_tokens = tokenizer.encode(target.strip(), add_special_tokens=True)
+                                data.append((input_tokens, target_tokens))
+                    else:
+                        print(f"Target file {target_file} not found.")
         else:
-            print(f"Files {input_file} or {target_file} not found.")
+            print(f"Input file {input_file} not found.")
         
         return data
     
@@ -76,7 +86,24 @@ def normal_collate_fn(batch):
         * initial_decoder_inputs: The very first input token to be decoder (only to be used in evaluation)
     '''
     # TODO
-    return [], [], [], [], []
+    encoder_ids, encoder_mask, decoder_inputs, decoder_targets = [], [], [], []
+    
+    for input_ids, target_ids in batch:
+        encoder_ids.append(torch.tensor(input_ids))
+        encoder_mask.append(torch.tensor([1] * len(input_ids)))  # Mask out non-padding tokens
+        
+        decoder_inputs.append(torch.tensor([0] + target_ids[:-1]))  # Shift the target tokens to the right by 1 for decoder input
+        decoder_targets.append(torch.tensor(target_ids))
+
+    # Pad sequences for dynamic batching
+    encoder_ids = pad_sequence(encoder_ids, batch_first=True, padding_value=PAD_IDX)
+    encoder_mask = pad_sequence(encoder_mask, batch_first=True, padding_value=0)
+    decoder_inputs = pad_sequence(decoder_inputs, batch_first=True, padding_value=PAD_IDX)
+    decoder_targets = pad_sequence(decoder_targets, batch_first=True, padding_value=PAD_IDX)
+
+    initial_decoder_inputs = decoder_inputs[:, 0]  # First token for evaluation
+
+    return encoder_ids, encoder_mask, decoder_inputs, decoder_targets, initial_decoder_inputs
 
 def test_collate_fn(batch):
     '''
@@ -92,7 +119,18 @@ def test_collate_fn(batch):
         * initial_decoder_inputs: The very first input token to be decoder (only to be used in evaluation)
     '''
     # TODO
-    return [], [], []
+    encoder_ids, encoder_mask = [], []
+
+    for input_ids, _ in batch:
+        encoder_ids.append(torch.tensor(input_ids))
+        encoder_mask.append(torch.tensor([1] * len(input_ids)))
+
+    encoder_ids = pad_sequence(encoder_ids, batch_first=True, padding_value=PAD_IDX)
+    encoder_mask = pad_sequence(encoder_mask, batch_first=True, padding_value=0)
+
+    initial_decoder_inputs = torch.zeros(encoder_ids.size(0), dtype=torch.long)  # First token for T5
+
+    return encoder_ids, encoder_mask, initial_decoder_inputs
 
 def get_dataloader(batch_size, split):
     data_folder = 'data'

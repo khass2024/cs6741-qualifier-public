@@ -102,7 +102,7 @@ def train_epoch(args, model, train_loader, optimizer, scheduler):
     total_tokens = 0
     criterion = nn.CrossEntropyLoss()
 
-    for encoder_input, encoder_mask, decoder_input, decoder_targets, _ in tqdm(train_loader):
+    for batch_idx, (encoder_input, encoder_mask, decoder_input, decoder_targets, _) in enumerate(tqdm(train_loader)):
         optimizer.zero_grad()
         encoder_input = encoder_input.to(DEVICE)
         encoder_mask = encoder_mask.to(DEVICE)
@@ -126,6 +126,10 @@ def train_epoch(args, model, train_loader, optimizer, scheduler):
             num_tokens = torch.sum(non_pad).item()
             total_loss += loss.item() * num_tokens
             total_tokens += num_tokens
+
+        # Log loss per batch
+        if args.use_wandb:
+            wandb.log({'train/batch_loss': loss.item()}, step=batch_idx)
 
     return total_loss / total_tokens
         

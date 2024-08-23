@@ -21,10 +21,18 @@ def initialize_model(args):
     or training a T5 model initialized with the 'google-t5/t5-small' config
     from scratch.
     '''
-    model = T5Model.from_pretrained("t5-small")
-    import pdb; pdb.set_trace()
+    if args.finetune:
+        # Load the pre-trained model for fine-tuning
+        model = T5ForConditionalGeneration.from_pretrained('t5-small')
+        print("Loaded pre-trained T5 model for fine-tuning.")
+    else:
+        # Initialize a T5 model from scratch using the same configuration
+        config = T5Config.from_pretrained('t5-small')
+        model = T5ForConditionalGeneration(config)
+        print("Initialized T5 model from scratch.")
+
+    model = model.to(DEVICE)
     return model
-    pass
 
 def mkdir(dirpath):
     if not os.path.exists(dirpath):
@@ -35,11 +43,38 @@ def mkdir(dirpath):
 
 def save_model(checkpoint_dir, model, best):
     # Save model checkpoint to be able to load the model later
-    pass
+    mkdir(checkpoint_dir)
+    checkpoint_path = os.path.join(checkpoint_dir, 'model_best.pth' if best else 'model_last.pth')
+
+    torch.save({
+        'model_state_dict': model.state_dict(),
+    }, checkpoint_path)
+
+    if best:
+        print(f"Saved the best model at {checkpoint_path}")
+    else:
+        print(f"Saved the latest model at {checkpoint_path}")
+    import pdb; pdb.set_trace()
+    return
 
 def load_model_from_checkpoint(args, best):
     # Load model from a checkpoint
-    pass
+    model_type = 'ft' if args.finetune else 'scr'
+    checkpoint_dir = os.path.join('checkpoints', f'{model_type}_experiments', args.experiment_name)
+    checkpoint_path = os.path.join(checkpoint_dir, 'model_best.pth' if best else 'model_last.pth')
+
+    if not os.path.exists(checkpoint_path):
+        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+
+    # Re-initialize model
+    model = initialize_model(args)
+
+    # Load the saved state_dict
+    checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
+    model.load_state_dict(checkpoint['model_state_dict'])
+
+    print(f"Loaded model from checkpoint: {checkpoint_path}")
+    return model
 
 def initialize_optimizer_and_scheduler(args, model, epoch_length):
     optimizer = initialize_optimizer(args, model)

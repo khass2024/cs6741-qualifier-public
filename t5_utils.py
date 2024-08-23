@@ -54,7 +54,6 @@ def save_model(checkpoint_dir, model, best):
         print(f"Saved the best model at {checkpoint_path}")
     else:
         print(f"Saved the latest model at {checkpoint_path}")
-    import pdb; pdb.set_trace()
     return
 
 def load_model_from_checkpoint(args, best):

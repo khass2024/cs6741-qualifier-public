@@ -28,7 +28,7 @@ def get_args():
     # Training hyperparameters
     parser.add_argument('--optimizer_type', type=str, default="AdamW", choices=["AdamW"],
                         help="What optimizer to use")
-    parser.add_argument('--learning_rate', type=float, default=1e-1)
+    parser.add_argument('--learning_rate', type=float, default=1e-5)
     parser.add_argument('--weight_decay', type=float, default=0)
 
     parser.add_argument('--scheduler_type', type=str, default="cosine", choices=["none", "cosine", "linear"],
